@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reloj Digital Sincronizado</title>
+    
+    <!-- Meta tags para PWA -->
+    <meta name="theme-color" content="#0a0a0c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RelojStudio">
+    
+    <!-- Icono de Apple generado con SVG en base64 -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzBhMGEwYyIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ1IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZjMzMzMiIHN0cm9rZS13aWR0aD0iNSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUiIGZpbGw9IiNmZjMzMzMiLz48bGluZSB4MT0iNTAiIHkxPSI1MCIgeDI9IjUwIiB5Mj0iMjAiIHN0cm9rZT0iI2ZmMzMzMyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iNTAiIHkxPSI1MCIgeDI9IjcwIiB5Mj0iNTAiIHN0cm9rZT0iI2ZmMzMzMyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=">
+    
+    <!-- Manifiesto PWA incrustado directamente como Data URI -->
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Reloj%20Digital%20Sincronizado%22%2C%22short_name%22%3A%22RelojStudio%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a0c%22%2C%22theme_color%22%3A%22%23ff3333%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzBhMGEwYyIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ1IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZjMzMzMiIHN0cm9rZS13aWR0aD0iNSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUiIGZpbGw9IiNmZjMzMzMiLz48bGluZSB4MT0iNTAiIHkxPSI1MCIgeDI9IjUwIiB5Mj0iMjAiIHN0cm9rZT0iI2ZmMzMzMyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iNTAiIHkxPSI1MCIgeDI9IjcwIiB5Mj0iNTAiIHN0cm9rZT0iI2ZmMzMzMyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4%3D%22%2C%22sizes%22%3A%22192x192%20512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            /* Fuente digital LED */
+            font-family: 'Share Tech Mono', 'Courier New', Courier, monospace;
+            background-color: #0a0a0c;
+            color: #d1d5db;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .studio-clock-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, #15151a 0%, #050505 100%);
+            border-radius: 50%;
+            border: 2px solid #1f1f25;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9), 0 15px 35px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+            z-index: 10;
+        }
+
+        .digital-time {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 4rem;
+            color: #ff3333;
+            text-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
+            z-index: 10;
+            line-height: 1;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        .digital-date {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            color: #ff6666;
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px rgba(255, 51, 51, 0.3);
+            z-index: 10;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: normal;
+        }
+
+        .led {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #2a1111;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        
+        .led-marker-5 {
+            background-color: #3d1414;
+            width: 6px;
+            height: 6px;
+        }
+
+        .led-marker-15 {
+            background-color: #5c1a1a;
+            width: 8px;
+            height: 8px;
+            border: none;
+        }
+
+        .led.active {
+            background-color: #ff3333;
+            box-shadow: 0 0 6px rgba(255, 51, 51, 0.6);
+        }
+
+        .led-marker-5.active {
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
+        }
+
+        .led-marker-15.active {
+            background-color: #ffffff;
+            box-shadow: 0 0 12px #ff3333;
+        }
+
+        .info-panel {
+            background: rgba(20, 20, 25, 0.6);
+            border: 1px solid #2a2a35;
+            border-radius: 16px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            text-align: left;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-label { color: #777788; }
+        .info-value { color: #e0e0e0; font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .text-yellow { color: #eab308; }
+        .text-green { color: #14b8a6; }
+        .text-red { color: #ef4444; }
+        .text-gray { color: #777788; }
+        
+        .sync-btn {
+            background-color: transparent;
+            color: #ff3333;
+            border: 1px solid #ff3333;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            text-transform: uppercase;
+            font-weight: normal;
+            letter-spacing: 1px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+        }
+        .sync-btn:hover {
+            background-color: rgba(255, 51, 51, 0.1);
+        }
+        .sync-btn:active { 
+            background-color: rgba(255, 51, 51, 0.2); 
+        }
+        .sync-btn:disabled { 
+            opacity: 0.3; 
+            cursor: not-allowed;
+            background-color: transparent;
+        }
+
+        .install-btn {
+            color: #14b8a6;
+            border-color: #14b8a6;
+            display: none; /* Oculto por defecto, se muestra mediante JS si PWA es compatible */
+        }
+        .install-btn:hover {
+            background-color: rgba(20, 184, 166, 0.1);
+        }
+        .install-btn:active {
+            background-color: rgba(20, 184, 166, 0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="dateText" class="digital-date">Cargando...</div>
+
+    <div class="studio-clock-container" id="clockContainer">
+        <!-- El reloj y los LEDs se inyectan por JS -->
+    </div>
+
+    <div class="info-panel">
+        <div class="info-grid">
+            <div class="info-label">Fuente:</div>
+            <div id="sourceText" class="info-value">Local (Sistema)</div>
+            
+            <div class="info-label">IP Pública:</div>
+            <div id="ipText" class="info-value">---</div>
+            
+            <div class="info-label">Estado:</div>
+            <div id="statusText" class="text-gray">Esperando...</div>
+        </div>
+        
+        <button id="syncBtn" class="sync-btn">Sincronizar Reloj</button>
+        <!-- Botón de instalación PWA -->
+        <button id="installBtn" class="sync-btn install-btn">Instalar App</button>
+    </div>
+
+    <script>
+        // --- Lógica PWA en el mismo archivo mediante Blob Service Worker ---
+        (function setupPWA() {
+            // 1. Crear e inyectar un Service Worker básico para cumplir los requisitos de PWA
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('install', (e) => self.skipWaiting());
+                    self.addEventListener('activate', (e) => self.clients.claim());
+                    self.addEventListener('fetch', (e) => {
+                        // Caché minimalista o red pura
+                        e.respondWith(fetch(e.request).catch(() => new Response('App Offline')));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+
+                navigator.serviceWorker.register(swUrl).then(() => {
+                    console.log('Service Worker de PWA registrado (Modo Single File).');
+                }).catch(err => console.log('Error PWA SW:', err));
+            }
+
+            // 2. Gestionar el botón de instalación
+            let deferredPrompt;
+            const installBtn = document.getElementById('installBtn');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // Prevenir el banner mini de información estándar
+                e.preventDefault();
+                // Guardar el evento para dispararlo cuando se haga clic
+                deferredPrompt = e;
+                // Mostrar nuestro botón de instalación personalizado
+                installBtn.style.display = 'block';
+            });
+
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    // Mostrar el aviso de instalación del sistema
+                    deferredPrompt.prompt();
+                    // Esperar a que el usuario responda al prompt
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        installBtn.style.display = 'none'; // Ocultar si aceptó
+                    }
+                    // Limpiar la variable
+                    deferredPrompt = null;
+                }
+            });
+
+            window.addEventListener('appinstalled', () => {
+                // Ocultar botón si se instaló por otra vía
+                installBtn.style.display = 'none';
+                console.log('PWA instalada con éxito');
+            });
+        })();
+
+        // --- Lógica del Reloj Digital ---
+        var timeOffset = 0;
+        var isSyncing = false;
+        var leds = [];
+        
+        var clockContainer, dateEl, sourceText, ipText, statusText, syncBtn, timeEl;
+
+        function initApp() {
+            try {
+                clockContainer = document.getElementById('clockContainer');
+                dateEl = document.getElementById('dateText');
+                sourceText = document.getElementById('sourceText');
+                ipText = document.getElementById('ipText');
+                statusText = document.getElementById('statusText');
+                syncBtn = document.getElementById('syncBtn');
+
+                clockContainer.innerHTML = '<div id="time" class="digital-time">00:00</div>'; 
+                timeEl = document.getElementById('time');
+                
+                for (var i = 0; i < 60; i++) {
+                    var led = document.createElement('div');
+                    led.className = 'led';
+                    
+                    if (i === 0 || i === 15 || i === 30 || i === 45) {
+                        led.classList.add('led-marker-15');
+                    } else if (i % 5 === 0) {
+                        led.classList.add('led-marker-5');
+                    }
+                    
+                    var angle = (i * 6 - 90) * (Math.PI / 180);
+                    var x = 50 + 44 * Math.cos(angle);
+                    var y = 50 + 44 * Math.sin(angle);
+                    led.style.left = x + '%';
+                    led.style.top = y + '%';
+                    clockContainer.appendChild(led);
+                    leds.push(led);
+                }
+
+                syncBtn.addEventListener('click', syncTimeSeguro);
+                updateClock();
+
+            } catch (error) {
+                document.body.innerHTML = '<div style="color:red; padding:20px;">Error crítico de carga: ' + error.message + '</div>';
+            }
+        }
+
+        function fetchConTimeout(url) {
+            return new Promise(function(resolve, reject) {
+                var timer = setTimeout(function() {
+                    reject(new Error("Timeout"));
+                }, 3500);
+                
+                fetch(url, { cache: 'no-store' })
+                    .then(function(response) {
+                        clearTimeout(timer);
+                        resolve(response);
+                    })
+                    .catch(function(err) {
+                        clearTimeout(timer);
+                        reject(err);
+                    });
+            });
+        }
+
+        function syncTimeSeguro() {
+            if (isSyncing) return;
+            isSyncing = true;
+            
+            statusText.textContent = 'Conectando...';
+            statusText.className = 'text-yellow';
+            syncBtn.textContent = 'Sincronizando...';
+            syncBtn.disabled = true;
+
+            fetchConTimeout('https://api.ipify.org?format=json')
+                .then(function(r) { return r.json(); })
+                .then(function(data) { ipText.textContent = data.ip || 'Oculta'; })
+                .catch(function() { ipText.textContent = 'Desconocida'; });
+
+            var start = Date.now();
+            fetchConTimeout('https://worldtimeapi.org/api/timezone/Etc/UTC')
+                .then(function(res) {
+                    if (!res.ok) throw new Error("Fallo API 1");
+                    return res.json();
+                })
+                .then(function(data) {
+                    aplicarHora(new Date(data.utc_datetime).getTime(), start, 'WorldTimeAPI');
+                })
+                .catch(function() {
+                    statusText.textContent = 'Reintentando...';
+                    var start2 = Date.now();
+                    fetchConTimeout('https://timeapi.io/api/Time/current/zone?timeZone=UTC')
+                        .then(function(res) {
+                            if (!res.ok) throw new Error("Fallo API 2");
+                            return res.json();
+                        })
+                        .then(function(data) {
+                            aplicarHora(new Date(data.dateTime + 'Z').getTime(), start2, 'TimeAPI.io');
+                        })
+                        .catch(function() {
+                            falloHora();
+                        });
+                });
+        }
+
+        function aplicarHora(serverTimeMs, startTime, source) {
+            var latency = (Date.now() - startTime) / 2;
+            timeOffset = (serverTimeMs + latency) - Date.now();
+            sourceText.textContent = source;
+            statusText.textContent = 'Sincronizado (' + Math.round(timeOffset) + 'ms)';
+            statusText.className = 'text-green';
+            terminarSincro();
+        }
+
+        function falloHora() {
+            sourceText.textContent = 'Reloj Local del Dispositivo';
+            statusText.textContent = 'Modo Offline (Fallo de red)';
+            statusText.className = 'text-red';
+            timeOffset = 0; 
+            terminarSincro();
+        }
+
+        function terminarSincro() {
+            isSyncing = false;
+            syncBtn.textContent = 'Sincronizar Reloj';
+            syncBtn.disabled = false;
+        }
+
+        function updateClock() {
+            try {
+                var now = new Date(Date.now() + timeOffset);
+                var h = now.getHours();
+                var m = now.getMinutes();
+                var s = now.getSeconds();
+                var ms = now.getMilliseconds();
+
+                var hours = (h < 10 ? '0' : '') + h;
+                var minutes = (m < 10 ? '0' : '') + m;
+
+                var colon = ms < 500 ? ':' : '<span style="opacity:0.2">:</span>';
+                timeEl.innerHTML = hours + colon + minutes;
+                
+                var opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                dateEl.textContent = now.toLocaleDateString('es-ES', opciones);
+
+                for (var i = 0; i < 60; i++) {
+                    if (i <= s) {
+                        leds[i].classList.add('active');
+                    } else {
+                        leds[i].classList.remove('active');
+                    }
+                }
+            } catch (e) {}
+
+            requestAnimationFrame(updateClock);
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
