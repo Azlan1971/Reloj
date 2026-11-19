@@ -1,0 +1,2905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reloj Studio — Sincronizado</title>
+    
+    <!-- Meta tags para PWA -->
+    <meta name="theme-color" content="#070709">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RelojStudio">
+    
+    <!-- Icono de Apple generado con SVG en base64 -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzBhMGEwYyIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQ1IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZjMzMzMiIHN0cm9rZS13aWR0aD0iNSIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUiIGZpbGw9IiNmZjMzMzMiLz48bGluZSB4MT0iNTAiIHkxPSI1MCIgeDI9IjUwIiB5Mj0iMjAiIHN0cm9rZT0iI2ZmMzMzMyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iNTAiIHkxPSI1MCIgeDI9IjcwIiB5Mj0iNTAiIHN0cm9rZT0iI2ZmMzMzMyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Nixie+One&family=Oswald:wght@600;700&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --led-primary: #ff2a2a;
+            --led-glow: rgba(255, 42, 42, 0.55);
+            --led-soft-glow: rgba(255, 42, 42, 0.16);
+            --led-ghost: rgba(255, 42, 42, 0.065);
+            --led-dim: #260d0d;
+            --led-dim-5: #3d1212;
+            --led-dim-15: #5c1818;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', 'Courier New', Courier, monospace;
+            background-color: #070709;
+            background-image: 
+                radial-gradient(circle at 50% 35%, rgba(28, 28, 36, 0.75) 0%, rgba(7, 7, 9, 1) 70%),
+                radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+            background-size: 100% 100%, 24px 24px;
+            color: #d1d5db;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px 16px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ==========================================================================
+           BARRA SUPERIOR: FECHA RETRO Y SELECTOR DE ESFERA INFERIOR
+           ========================================================================== */
+        .bottom-switcher-bar {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 1.35rem;
+            z-index: 10;
+        }
+
+        .mode-switcher {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(16, 16, 22, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            padding: 4px;
+            gap: 4px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .mode-btn {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #8b92a0;
+            background: transparent;
+            border: none;
+            border-radius: 999px;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn:hover {
+            color: #e5e7eb;
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .digital-date {
+            position: relative;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.08rem;
+            color: var(--led-primary);
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 9px 20px;
+            background: linear-gradient(180deg, #130808 0%, #1a0b0b 100%);
+            border: 1px solid #3d1616;
+            border-top-color: #240c0c;
+            border-bottom-color: #591f1f;
+            border-radius: 8px;
+            box-shadow: 
+                inset 0 2px 8px rgba(0, 0, 0, 0.9),
+                0 0 18px var(--led-soft-glow);
+            text-shadow: 0 0 10px var(--led-glow);
+            overflow: hidden;
+        }
+
+        .digital-date::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.25) 0px,
+                rgba(0, 0, 0, 0.25) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+        }
+
+        /* ==========================================================================
+           MODO 1: ESFERA ESTUDIO BROADCAST
+           ========================================================================== */
+        .studio-bezel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            width: 100%;
+            max-width: 390px;
+            height: 368px;
+            padding: 18px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #16161e 0%, #0a0a0e 100%);
+            border: 1px solid #282834;
+            border-top-color: #363646;
+            box-shadow: 
+                0 24px 55px rgba(0, 0, 0, 0.88),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            margin-bottom: 1.35rem;
+        }
+
+        .studio-clock-container {
+            position: relative;
+            width: 244px;
+            height: 244px;
+            background: radial-gradient(circle at 50% 42%, #17171d 0%, #070709 78%, #040405 100%);
+            border-radius: 50%;
+            border: 2px solid #252530;
+            box-shadow: 
+                0 12px 28px rgba(0, 0, 0, 0.8),
+                inset 0 0 36px rgba(0, 0, 0, 0.95),
+                inset 0 2px 6px rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .studio-clock-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 45%);
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        .display-cluster {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .time-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .digital-ghost {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 3.35rem;
+            color: var(--led-ghost);
+            line-height: 1;
+            letter-spacing: 2px;
+            user-select: none;
+        }
+
+        .digital-time {
+            position: absolute;
+            inset: 0;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 3.35rem;
+            color: var(--led-primary);
+            text-shadow: 0 0 16px var(--led-glow);
+            line-height: 1;
+            letter-spacing: 2px;
+        }
+
+        .led {
+            position: absolute;
+            width: 3.5px;
+            height: 3.5px;
+            border-radius: 50%;
+            background-color: var(--led-dim);
+            transform: translate(-50%, -50%);
+            transition: background-color 0.15s ease, box-shadow 0.15s ease;
+            z-index: 8;
+        }
+
+        .led-marker-5 {
+            background-color: var(--led-dim-5);
+            width: 5px;
+            height: 5px;
+        }
+
+        .led-marker-15 {
+            background-color: var(--led-dim-15);
+            width: 7px;
+            height: 7px;
+        }
+
+        .led.active {
+            background-color: var(--led-primary);
+            box-shadow: 0 0 6px var(--led-glow);
+        }
+
+        .led-marker-5.active {
+            box-shadow: 0 0 9px var(--led-glow);
+        }
+
+        .led-marker-15.active {
+            background-color: #ffffff;
+            box-shadow: 0 0 12px var(--led-primary);
+        }
+
+        /* ==========================================================================
+           MODO 2: DÍGITOS DE FILAMENTO CÁLIDO (SIN BULBOS) — HH:MM:ss + FECHA NIXIE
+           ========================================================================== */
+        .nixie-rack {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 390px;
+            height: 368px;
+            padding: 16px 18px 15px;
+            background: linear-gradient(180deg, #161311 0%, #0b0908 100%);
+            border: 1px solid #2e241d;
+            border-top-color: #3f3127;
+            border-radius: 20px;
+            box-shadow: 
+                0 24px 55px rgba(0, 0, 0, 0.88),
+                inset 0 1px 0 rgba(255, 200, 150, 0.08);
+            margin-bottom: 1.35rem;
+        }
+
+        .nixie-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            height: 28px;
+            padding: 0 11px;
+            background: rgba(255, 160, 80, 0.03);
+            border: 1px solid rgba(255, 165, 90, 0.12);
+            border-radius: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            line-height: 1;
+            letter-spacing: 1.4px;
+            color: #9e7b5e;
+            text-transform: uppercase;
+        }
+
+        .nixie-header-left,
+        .nixie-header-right {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .nixie-screw {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #5a483b, #1f1813);
+            border: 1px solid #140f0c;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+        }
+
+        .nixie-main-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            width: 100%;
+        }
+
+        .nixie-time-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 12px;
+            height: 86px;
+        }
+
+        .nixie-labels-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            height: 14px;
+        }
+
+        .nixie-col-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 600;
+            line-height: 1;
+            letter-spacing: 1.6px;
+            color: #7d624d;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .nixie-col-label.hm {
+            width: 110px;
+        }
+
+        .nixie-col-label.sec {
+            width: 84px;
+        }
+
+        .nixie-digit-pair {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nixie-tube-wrap {
+            position: relative;
+            width: 52px;
+            height: 86px;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 106, 0, 0.14) 0%, #0a0807 75%);
+            border: 1px solid #261d17;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .nixie-tube-wrap.sec {
+            width: 39px;
+            height: 64px;
+            border-radius: 8px;
+        }
+
+        .nixie-stack {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .nixie-cathode-off {
+            position: absolute;
+            font-family: 'Nixie One', cursive;
+            font-size: 3.1rem;
+            color: rgba(130, 95, 70, 0.12);
+            line-height: 1;
+            user-select: none;
+        }
+
+        .nixie-tube-wrap.sec .nixie-cathode-off {
+            font-size: 2.2rem;
+        }
+
+        .nixie-digit {
+            position: relative;
+            font-family: 'Nixie One', cursive;
+            font-size: 3.1rem;
+            color: #ff942e;
+            line-height: 1;
+            text-shadow: 
+                0 0 6px #ffb347,
+                0 0 18px #ff6200,
+                0 0 32px rgba(255, 75, 0, 0.8);
+            z-index: 2;
+        }
+
+        .nixie-tube-wrap.sec .nixie-digit {
+            font-size: 2.2rem;
+        }
+
+        .nixie-date-row {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 52px;
+            padding: 0 16px;
+            width: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 106, 0, 0.16) 0%, #0a0807 78%);
+            border: 1px solid #261d17;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.92);
+            overflow: hidden;
+        }
+
+        .nixie-date-ghost {
+            position: absolute;
+            font-family: 'Nixie One', cursive;
+            font-size: 1.52rem;
+            line-height: 1;
+            color: rgba(130, 95, 70, 0.13);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .nixie-date-glow {
+            position: absolute;
+            font-family: 'Nixie One', cursive;
+            font-size: 1.52rem;
+            line-height: 1;
+            color: #ff6a00;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            filter: blur(5px);
+            opacity: 0.85;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .nixie-date-text {
+            position: relative;
+            font-family: 'Nixie One', cursive;
+            font-size: 1.52rem;
+            line-height: 1;
+            color: #ff9836;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-shadow: 
+                0 0 5px #ffbe5c,
+                0 0 14px #ff6200,
+                0 0 26px rgba(255, 75, 0, 0.85);
+            z-index: 2;
+        }
+
+        .nixie-footer-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            width: 100%;
+            padding-top: 7px;
+            border-top: 1px solid rgba(255, 165, 90, 0.12);
+            font-family: 'Share Tech Mono', monospace;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .nixie-solar-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .nixie-solar-lbl {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.54rem;
+            font-weight: 600;
+            letter-spacing: 0.7px;
+            color: #7d624d;
+        }
+
+        .nixie-solar-val {
+            font-size: 0.74rem;
+            letter-spacing: 0.8px;
+            color: #c9976b;
+        }
+
+        /* ==========================================================================
+           MODO 3: DÍGITOS FLIP RETRO (ALINEACIÓN IDÉNTICA A NIXIE) — HH:MM:SS
+           ========================================================================== */
+        .flip-rack {
+            position: relative;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 390px;
+            height: 368px;
+            padding: 16px 18px 15px;
+            background: linear-gradient(180deg, #161514 0%, #0b0a0a 100%);
+            border: 1px solid #2a2724;
+            border-top-color: #38332f;
+            border-radius: 20px;
+            box-shadow: 
+                0 24px 55px rgba(0, 0, 0, 0.88),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            margin-bottom: 1.35rem;
+            overflow: hidden;
+        }
+
+        .flip-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            height: 28px;
+            padding: 0 11px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            line-height: 1;
+            letter-spacing: 1.4px;
+            color: #9e9386;
+            text-transform: uppercase;
+        }
+
+        .flip-header-left,
+        .flip-header-right {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .flip-screw {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #544e47, #1d1b18);
+            border: 1px solid #12110f;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+            flex-shrink: 0;
+        }
+
+        .flip-main-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            width: 100%;
+        }
+
+        .flip-time-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 12px;
+            height: 86px;
+            z-index: 2;
+        }
+
+        .flip-labels-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            height: 14px;
+        }
+
+        .flip-col-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 600;
+            line-height: 1;
+            letter-spacing: 1.6px;
+            color: #756e66;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .flip-col-label.hm {
+            width: 110px;
+        }
+
+        .flip-col-label.sec {
+            width: 84px;
+        }
+
+        .flip-digit-pair {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .flip-unit {
+            position: relative;
+            width: 52px;
+            height: 86px;
+            background: linear-gradient(180deg, #181716 0%, #100f0e 50%, #151413 100%);
+            border-radius: 10px;
+            border: 1px solid #2c2926;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            perspective: 400px;
+        }
+
+        .flip-unit.sec {
+            width: 39px;
+            height: 64px;
+            border-radius: 8px;
+        }
+
+        .flip-unit::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: rgba(255, 255, 255, 0.015);
+            border-bottom: 2px solid #050505;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .flip-unit::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(1px);
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .flip-digit {
+            font-family: 'Oswald', sans-serif;
+            font-weight: 700;
+            font-size: 3.45rem;
+            color: #ffefd6;
+            letter-spacing: 0px;
+            line-height: 1;
+            transform: scaleY(1.06);
+            text-shadow: 
+                0 0 8px rgba(255, 196, 105, 0.72),
+                0 0 20px rgba(255, 150, 45, 0.42),
+                0 2px 4px rgba(0, 0, 0, 0.9);
+            z-index: 2;
+        }
+
+        .flip-unit.sec .flip-digit {
+            font-size: 2.45rem;
+        }
+
+        .flip-unit.flipping .flip-digit {
+            animation: flipPulse 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes flipPulse {
+            0% {
+                transform: rotateX(-75deg) scaleY(0.92);
+                opacity: 0.3;
+            }
+            100% {
+                transform: rotateX(0deg) scaleY(1.06);
+                opacity: 1;
+            }
+        }
+
+        /* Fila inferior de fecha en tarjetas Flip con la misma altura exacta que Nixie */
+        .flip-date-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 52px;
+            width: 100%;
+            z-index: 2;
+        }
+
+        .flip-date-card {
+            position: relative;
+            height: 52px;
+            padding: 0 15px;
+            background: linear-gradient(180deg, #181716 0%, #100f0e 50%, #151413 100%);
+            border: 1px solid #2c2926;
+            border-radius: 8px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .flip-date-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: rgba(255, 255, 255, 0.015);
+            border-bottom: 1.5px solid #050505;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .flip-date-text {
+            font-family: 'Oswald', sans-serif;
+            font-weight: 700;
+            font-size: 1.52rem;
+            line-height: 1;
+            color: #f7e7ce;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 
+                0 0 7px rgba(255, 190, 95, 0.6),
+                0 0 16px rgba(255, 145, 40, 0.35),
+                0 1px 2px rgba(0, 0, 0, 0.9);
+            z-index: 2;
+        }
+
+        .flip-date-card.accent .flip-date-text {
+            color: #ffc56b;
+            text-shadow: 
+                0 0 8px rgba(255, 185, 75, 0.78),
+                0 0 18px rgba(255, 140, 35, 0.45);
+        }
+
+        .flip-footer-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            width: 100%;
+            padding-top: 7px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            font-family: 'Share Tech Mono', monospace;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .flip-solar-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .flip-solar-lbl {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.54rem;
+            font-weight: 600;
+            letter-spacing: 0.7px;
+            color: #756e66;
+        }
+
+        .flip-solar-val {
+            font-size: 0.74rem;
+            letter-spacing: 0.8px;
+            color: #b8afa4;
+        }
+
+        /* ==========================================================================
+           MODO 4: CALENDARIO DE ESTUDIO SINCRONIZADO
+           ========================================================================== */
+        .calendar-rack {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 390px;
+            height: 368px;
+            padding: 15px 18px 13px;
+            background: linear-gradient(180deg, #14141a 0%, #0a0a0e 100%);
+            border: 1px solid #282834;
+            border-top-color: #363646;
+            border-radius: 20px;
+            box-shadow: 
+                0 24px 55px rgba(0, 0, 0, 0.88),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            margin-bottom: 1.35rem;
+            overflow: hidden;
+        }
+
+        .cal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .cal-title-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .cal-month-title {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.25rem;
+            color: var(--led-primary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 12px var(--led-glow);
+        }
+
+        .cal-nav-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cal-nav-btn {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            color: #d1d5db;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .cal-nav-btn:hover {
+            color: #ffffff;
+            border-color: rgba(255, 42, 42, 0.5);
+            background: rgba(255, 42, 42, 0.12);
+        }
+
+        .cal-today-btn {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            width: auto;
+            padding: 0 10px;
+            color: #9ca3af;
+        }
+
+        .cal-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        .cal-weekday {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            color: #6b7280;
+            padding: 4px 0;
+        }
+
+        .cal-weekday.weekend {
+            color: #9b4b4b;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .cal-day {
+            position: relative;
+            height: 29px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.95rem;
+            color: #d1d5db;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .cal-day:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.16);
+        }
+
+        .cal-day.other-month {
+            color: #3f424e;
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .cal-day.weekend:not(.other-month):not(.today) {
+            color: #b88a8a;
+        }
+
+        .cal-day.holiday:not(.today) {
+            color: var(--led-primary);
+            background: rgba(255, 42, 42, 0.08);
+            border-color: rgba(255, 42, 42, 0.28);
+            text-shadow: 0 0 8px rgba(255, 42, 42, 0.45);
+        }
+
+        .cal-day.holiday.other-month {
+            color: rgba(255, 42, 42, 0.42);
+            background: transparent;
+            border-color: transparent;
+            text-shadow: none;
+        }
+
+        .cal-day.holiday::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: var(--led-primary);
+            box-shadow: 0 0 6px var(--led-glow);
+        }
+
+        .cal-day.holiday.other-month::after {
+            opacity: 0.4;
+            box-shadow: none;
+        }
+
+        .cal-day.selected:not(.today) {
+            border-color: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.09);
+            color: #ffffff;
+        }
+
+        .cal-day.holiday.selected:not(.today) {
+            border-color: var(--led-primary);
+            background: rgba(255, 42, 42, 0.16);
+            color: #ff6b6b;
+        }
+
+        .cal-day.today {
+            background: rgba(255, 42, 42, 0.18);
+            border-color: var(--led-primary);
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--led-glow);
+            box-shadow: 
+                inset 0 0 10px rgba(255, 42, 42, 0.25),
+                0 0 12px var(--led-soft-glow);
+        }
+
+        .cal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 6px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            font-size: 0.78rem;
+            color: #9ca3af;
+            letter-spacing: 0.6px;
+        }
+
+        .cal-holiday-banner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+            margin-top: 5px;
+            padding: 3px 10px;
+            border-radius: 8px;
+            background: rgba(255, 42, 42, 0.1);
+            border: 1px solid rgba(255, 42, 42, 0.28);
+            color: #ff7b7b;
+            font-size: 0.72rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            text-align: center;
+            text-shadow: 0 0 8px rgba(255, 42, 42, 0.35);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cal-holiday-banner.empty {
+            display: none;
+        }
+
+        .cal-footer-highlight {
+            color: var(--led-primary);
+            text-shadow: 0 0 8px var(--led-soft-glow);
+        }
+
+        /* ==========================================================================
+           MODO 5: ESTACIÓN METEOROLÓGICA POR IP (TIEMPO ACTUAL, HORAS Y DÍAS)
+           ========================================================================== */
+        .weather-rack {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 390px;
+            height: 368px;
+            padding: 15px 18px 14px;
+            background: linear-gradient(180deg, #14161d 0%, #0a0b0f 100%);
+            border: 1px solid #262b38;
+            border-top-color: #343b4d;
+            border-radius: 20px;
+            box-shadow: 
+                0 24px 55px rgba(0, 0, 0, 0.88),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            margin-bottom: 1.35rem;
+            overflow: hidden;
+        }
+
+        .wx-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .wx-loc-group {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .wx-loc-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
+            flex-shrink: 0;
+        }
+
+        .wx-loc-dot.gps {
+            background: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.85);
+        }
+
+        .wx-city {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.98rem;
+            color: #e2e8f0;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .wx-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .wx-refresh-btn {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+
+        .wx-refresh-btn:hover {
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .wx-refresh-btn.gps-active {
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.45);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .wx-search-bar {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .wx-search-bar.open {
+            display: flex;
+        }
+
+        .wx-search-input {
+            flex: 1;
+            min-width: 0;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            background: rgba(15, 23, 42, 0.85);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            outline: none;
+        }
+
+        .wx-search-input::placeholder {
+            color: #64748b;
+        }
+
+        .wx-search-results {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: #0f131c;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 10px;
+            padding: 6px;
+            margin-top: 2px;
+        }
+
+        .wx-search-results.open {
+            display: flex;
+        }
+
+        .wx-result-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.03);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem;
+            cursor: pointer;
+            text-align: left;
+            border: none;
+        }
+
+        .wx-result-item:hover {
+            background: rgba(56, 189, 248, 0.16);
+            color: #ffffff;
+        }
+
+        .wx-result-sub {
+            color: #94a3b8;
+            font-size: 0.68rem;
+        }
+
+        .wx-loc-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
+            flex-shrink: 0;
+        }
+
+        .wx-city {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.02rem;
+            color: #e2e8f0;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wx-refresh-btn {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+
+        .wx-refresh-btn:hover {
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .wx-current {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(56, 189, 248, 0.16);
+            border-radius: 12px;
+        }
+
+        .wx-current-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wx-main-icon {
+            width: 38px;
+            height: 38px;
+            color: #38bdf8;
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45));
+            flex-shrink: 0;
+        }
+
+        .wx-temp-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wx-temp-now {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 2.05rem;
+            line-height: 1;
+            color: #f8fafc;
+            text-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+        }
+
+        .wx-desc {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .wx-metrics {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 3px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+        }
+
+        .wx-metrics span strong {
+            color: #e2e8f0;
+            font-weight: 400;
+        }
+
+        .wx-section-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .wx-hourly-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .wx-hour-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 6px 4px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 9px;
+        }
+
+        .wx-hour-time {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .wx-hour-icon {
+            width: 18px;
+            height: 18px;
+            color: #7dd3fc;
+        }
+
+        .wx-hour-temp {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.82rem;
+            color: #f1f5f9;
+        }
+
+        .wx-daily-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .wx-day-row {
+            display: grid;
+            grid-template-columns: 44px 20px 1fr auto;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 7px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.78rem;
+        }
+
+        .wx-day-name {
+            color: #cbd5e1;
+            text-transform: uppercase;
+        }
+
+        .wx-day-icon {
+            width: 16px;
+            height: 16px;
+            color: #38bdf8;
+        }
+
+        .wx-bar-track {
+            position: relative;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .wx-bar-fill {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #38bdf8, #fb923c);
+        }
+
+        .wx-day-temps {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+        }
+
+        .wx-tmin {
+            color: #64748b;
+        }
+
+        .wx-tmax {
+            color: #f8fafc;
+        }
+
+        /* ==========================================================================
+           PANEL DE TELEMETRÍA Y CONTROLES
+           ========================================================================== */
+        .info-panel {
+            background: rgba(18, 18, 24, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-top-color: rgba(255, 255, 255, 0.12);
+            border-radius: 18px;
+            padding: 1.35rem 1.5rem;
+            width: 100%;
+            max-width: 390px;
+            box-shadow: 
+                0 18px 40px rgba(0, 0, 0, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 11px 16px;
+            align-items: center;
+            text-align: left;
+            margin-bottom: 1.35rem;
+            font-size: 0.85rem;
+        }
+        
+        .info-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.74rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+            color: #6b7280;
+        }
+
+        .info-value {
+            color: #e5e7eb;
+            text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 7px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 8px currentColor;
+            flex-shrink: 0;
+        }
+        
+        .text-yellow { color: #eab308; }
+        .text-green { color: #10b981; }
+        .text-red { color: #ef4444; }
+        .text-gray { color: #6b7280; }
+
+        .actions-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .sync-btn {
+            background: rgba(255, 42, 42, 0.08);
+            color: var(--led-primary);
+            border: 1px solid rgba(255, 42, 42, 0.45);
+            padding: 12px 16px;
+            border-radius: 10px;
+            width: 100%;
+            text-transform: uppercase;
+            font-size: 0.88rem;
+            letter-spacing: 1.4px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sync-btn:hover {
+            background: rgba(255, 42, 42, 0.16);
+            border-color: var(--led-primary);
+            box-shadow: 0 0 18px var(--led-soft-glow);
+        }
+
+        .sync-btn:active { 
+            transform: scale(0.99);
+        }
+
+        .sync-btn:disabled { 
+            opacity: 0.38; 
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        @media (max-width: 420px) {
+            .studio-bezel,
+            .nixie-rack,
+            .flip-rack,
+            .calendar-rack,
+            .weather-rack {
+                height: 344px;
+            }
+            .mode-btn {
+                padding: 5px 8px;
+                font-size: 0.64rem;
+                letter-spacing: 0.4px;
+            }
+            .weather-rack {
+                padding: 12px 12px 11px;
+            }
+            .wx-temp-now {
+                font-size: 1.8rem;
+            }
+            .wx-hour-card {
+                padding: 5px 2px;
+            }
+            .wx-day-row {
+                padding: 3px 6px;
+                font-size: 0.74rem;
+            }
+            .studio-clock-container {
+                width: 226px;
+                height: 226px;
+            }
+            .nixie-rack,
+            .flip-rack {
+                padding: 13px 12px 12px;
+            }
+            .nixie-time-row,
+            .flip-time-row {
+                gap: 8px;
+                height: 74px;
+            }
+            .nixie-labels-row,
+            .flip-labels-row {
+                gap: 8px;
+            }
+            .nixie-digit-pair,
+            .flip-digit-pair {
+                gap: 4px;
+            }
+            .nixie-tube-wrap,
+            .flip-unit {
+                width: 44px;
+                height: 74px;
+            }
+            .nixie-tube-wrap.sec,
+            .flip-unit.sec {
+                width: 33px;
+                height: 55px;
+            }
+            .nixie-col-label.hm,
+            .flip-col-label.hm {
+                width: 92px;
+            }
+            .nixie-col-label.sec,
+            .flip-col-label.sec {
+                width: 70px;
+            }
+            .nixie-solar-lbl,
+            .flip-solar-lbl {
+                font-size: 0.5rem;
+            }
+            .nixie-solar-val,
+            .flip-solar-val {
+                font-size: 0.68rem;
+            }
+            .nixie-digit, .nixie-cathode-off {
+                font-size: 2.6rem;
+            }
+            .nixie-tube-wrap.sec .nixie-digit,
+            .nixie-tube-wrap.sec .nixie-cathode-off {
+                font-size: 1.85rem;
+            }
+            .nixie-date-row,
+            .flip-date-row {
+                height: 44px;
+            }
+            .nixie-date-text,
+            .nixie-date-ghost,
+            .nixie-date-glow {
+                font-size: 1.25rem;
+                letter-spacing: 2px;
+            }
+            .digital-time, .digital-ghost {
+                font-size: 3rem;
+            }
+            .flip-digit {
+                font-size: 2.85rem;
+            }
+            .flip-unit.sec .flip-digit {
+                font-size: 2.05rem;
+            }
+            .flip-date-card {
+                height: 44px;
+                padding: 0 11px;
+            }
+            .flip-date-text {
+                font-size: 1.28rem;
+            }
+            .calendar-rack {
+                padding: 12px 12px 11px;
+            }
+            .cal-day {
+                height: 26px;
+                font-size: 0.86rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ESFERA 1: Estudio Broadcast -->
+    <div class="studio-bezel" id="dialStudio">
+        <div id="dateText" class="digital-date">Cargando fecha...</div>
+        <div class="studio-clock-container" id="clockContainer">
+            <!-- El display y los 60 LEDs se inyectan por JS -->
+        </div>
+    </div>
+
+    <!-- ESFERA 2: Dígitos Nixie de Filamento Cálido (Sin bulbos) -->
+    <div class="nixie-rack" id="dialNixie">
+        <div class="nixie-header">
+            <div class="nixie-header-left">
+                <span class="nixie-screw"></span>
+            </div>
+            <div class="nixie-header-right">
+                <span id="nxWeekMeta">SEM -- · DÍA ---</span>
+                <span class="nixie-screw"></span>
+            </div>
+        </div>
+        <div class="nixie-main-block">
+            <div class="nixie-time-row">
+                <div class="nixie-digit-pair">
+                    <div class="nixie-tube-wrap">
+                        <div class="nixie-stack">
+                            <span class="nixie-cathode-off" style="transform:translate(-1px,-1px)">3</span>
+                            <span class="nixie-cathode-off" style="transform:translate(1px,1px)">8</span>
+                            <span class="nixie-cathode-off">0</span>
+                        </div>
+                        <span class="nixie-digit" id="nx0">0</span>
+                    </div>
+
+                    <div class="nixie-tube-wrap">
+                        <div class="nixie-stack">
+                            <span class="nixie-cathode-off" style="transform:translate(-1px,1px)">6</span>
+                            <span class="nixie-cathode-off" style="transform:translate(1px,-1px)">9</span>
+                            <span class="nixie-cathode-off">5</span>
+                        </div>
+                        <span class="nixie-digit" id="nx1">0</span>
+                    </div>
+                </div>
+
+                <div class="nixie-digit-pair">
+                    <div class="nixie-tube-wrap">
+                        <div class="nixie-stack">
+                            <span class="nixie-cathode-off" style="transform:translate(-1px,-1px)">2</span>
+                            <span class="nixie-cathode-off" style="transform:translate(1px,1px)">7</span>
+                            <span class="nixie-cathode-off">4</span>
+                        </div>
+                        <span class="nixie-digit" id="nx2">0</span>
+                    </div>
+
+                    <div class="nixie-tube-wrap">
+                        <div class="nixie-stack">
+                            <span class="nixie-cathode-off" style="transform:translate(-1px,1px)">8</span>
+                            <span class="nixie-cathode-off" style="transform:translate(1px,-1px)">1</span>
+                            <span class="nixie-cathode-off">0</span>
+                        </div>
+                        <span class="nixie-digit" id="nx3">0</span>
+                    </div>
+                </div>
+
+                <div class="nixie-digit-pair">
+                    <div class="nixie-tube-wrap sec">
+                        <div class="nixie-stack">
+                            <span class="nixie-cathode-off" style="transform:translate(-1px,-1px)">5</span>
+                            <span class="nixie-cathode-off" style="transform:translate(1px,1px)">9</span>
+                            <span class="nixie-cathode-off">2</span>
+                        </div>
+                        <span class="nixie-digit" id="nx4">0</span>
+                    </div>
+
+                    <div class="nixie-tube-wrap sec">
+                        <div class="nixie-stack">
+                            <span class="nixie-cathode-off" style="transform:translate(-1px,1px)">7</span>
+                            <span class="nixie-cathode-off" style="transform:translate(1px,-1px)">3</span>
+                            <span class="nixie-cathode-off">6</span>
+                        </div>
+                        <span class="nixie-digit" id="nx5">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="nixie-labels-row">
+                <span class="nixie-col-label hm">Horas</span>
+                <span class="nixie-col-label hm">Minutos</span>
+                <span class="nixie-col-label sec">Segundos</span>
+            </div>
+        </div>
+        <div class="nixie-date-row">
+            <span class="nixie-date-ghost" style="transform:translate(-1px,-1px)">888 88 888 8888</span>
+            <span class="nixie-date-ghost" style="transform:translate(1px,1px)">000 00 000 0000</span>
+            <span class="nixie-date-glow" id="nxDateGlow">--- -- --- ----</span>
+            <span class="nixie-date-text" id="nxDate">--- -- --- ----</span>
+        </div>
+        <div class="nixie-footer-strip">
+            <div class="nixie-solar-item">
+                <span class="nixie-solar-lbl">1ª Luz</span>
+                <span class="nixie-solar-val" id="nxFirstLight">--:--</span>
+            </div>
+            <div class="nixie-solar-item">
+                <span class="nixie-solar-lbl">Amanecer</span>
+                <span class="nixie-solar-val" id="nxSunrise">--:--</span>
+            </div>
+            <div class="nixie-solar-item">
+                <span class="nixie-solar-lbl">Atardecer</span>
+                <span class="nixie-solar-val" id="nxSunset">--:--</span>
+            </div>
+            <div class="nixie-solar-item">
+                <span class="nixie-solar-lbl">Últ. Luz</span>
+                <span class="nixie-solar-val" id="nxLastLight">--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ESFERA 3: Flip Retro -->
+    <div class="flip-rack" id="dialFlip">
+        <div class="flip-header">
+            <div class="flip-header-left">
+                <span class="flip-screw"></span>
+            </div>
+            <div class="flip-header-right">
+                <span id="flWeekMeta">SEM -- · DÍA ---</span>
+                <span class="flip-screw"></span>
+            </div>
+        </div>
+        <div class="flip-main-block">
+            <div class="flip-time-row">
+                <div class="flip-digit-pair">
+                    <div class="flip-unit" id="flBox0"><span class="flip-digit" id="fl0">0</span></div>
+                    <div class="flip-unit" id="flBox1"><span class="flip-digit" id="fl1">0</span></div>
+                </div>
+                <div class="flip-digit-pair">
+                    <div class="flip-unit" id="flBox2"><span class="flip-digit" id="fl2">0</span></div>
+                    <div class="flip-unit" id="flBox3"><span class="flip-digit" id="fl3">0</span></div>
+                </div>
+                <div class="flip-digit-pair">
+                    <div class="flip-unit sec" id="flBox4"><span class="flip-digit" id="fl4">0</span></div>
+                    <div class="flip-unit sec" id="flBox5"><span class="flip-digit" id="fl5">0</span></div>
+                </div>
+            </div>
+            <div class="flip-labels-row">
+                <span class="flip-col-label hm">Horas</span>
+                <span class="flip-col-label hm">Minutos</span>
+                <span class="flip-col-label sec">Segundos</span>
+            </div>
+        </div>
+        <div class="flip-date-row">
+            <div class="flip-date-card" id="flDayBox"><span class="flip-date-text" id="flDay">---</span></div>
+            <div class="flip-date-card accent" id="flDateNumBox"><span class="flip-date-text" id="flDateNum">--</span></div>
+            <div class="flip-date-card" id="flMonthBox"><span class="flip-date-text" id="flMonth">---</span></div>
+            <div class="flip-date-card" id="flYearBox"><span class="flip-date-text" id="flYear">----</span></div>
+        </div>
+        <div class="flip-footer-strip">
+            <div class="flip-solar-item">
+                <span class="flip-solar-lbl">1ª Luz</span>
+                <span class="flip-solar-val" id="flFirstLight">--:--</span>
+            </div>
+            <div class="flip-solar-item">
+                <span class="flip-solar-lbl">Amanecer</span>
+                <span class="flip-solar-val" id="flSunrise">--:--</span>
+            </div>
+            <div class="flip-solar-item">
+                <span class="flip-solar-lbl">Atardecer</span>
+                <span class="flip-solar-val" id="flSunset">--:--</span>
+            </div>
+            <div class="flip-solar-item">
+                <span class="flip-solar-lbl">Últ. Luz</span>
+                <span class="flip-solar-val" id="flLastLight">--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 4: Calendario -->
+    <div class="calendar-rack" id="dialCalendar">
+        <div class="cal-header">
+            <div class="cal-nav-group">
+                <button type="button" class="cal-nav-btn" id="calPrevBtn" aria-label="Mes anterior">&lsaquo;</button>
+                <button type="button" class="cal-nav-btn cal-today-btn" id="calTodayBtn">Hoy</button>
+            </div>
+            <div class="cal-title-wrap">
+                <div class="cal-month-title" id="calMonthTitle">--- ----</div>
+            </div>
+            <div class="cal-nav-group">
+                <button type="button" class="cal-nav-btn" id="calNextBtn" aria-label="Mes siguiente">&rsaquo;</button>
+            </div>
+        </div>
+        <div class="cal-weekdays">
+            <div class="cal-weekday">LUN</div>
+            <div class="cal-weekday">MAR</div>
+            <div class="cal-weekday">MIÉ</div>
+            <div class="cal-weekday">JUE</div>
+            <div class="cal-weekday">VIE</div>
+            <div class="cal-weekday weekend">SÁB</div>
+            <div class="cal-weekday weekend">DOM</div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-holiday-banner empty" id="calHolidayBanner"></div>
+        <div class="cal-footer">
+            <span class="cal-footer-highlight" id="calSelectedLabel">--- -- --- ----</span>
+            <span id="calMetaLabel">SEM -- · DÍA ---</span>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 5: Tiempo Meteorológico (Barakaldo por defecto) -->
+    <div class="weather-rack" id="dialWeather">
+        <div class="wx-header">
+            <div class="wx-loc-group" id="wxLocGroup">
+                <span class="wx-loc-dot" id="wxLocDot"></span>
+                <span class="wx-city" id="wxCity" title="Pulsa para cambiar ciudad">BARAKALDO</span>
+            </div>
+            <div class="wx-actions" id="wxActions">
+                <button type="button" class="wx-refresh-btn" id="wxGpsBtn" aria-label="Usar mi ubicación exacta" title="Usar ubicación exacta (GPS)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                </button>
+                <button type="button" class="wx-refresh-btn" id="wxSearchToggleBtn" aria-label="Buscar ciudad" title="Buscar ciudad manualmente">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </button>
+                <button type="button" class="wx-refresh-btn" id="wxRefreshBtn" aria-label="Actualizar tiempo" title="Actualizar previsión">&#8635;</button>
+            </div>
+            <div class="wx-search-bar" id="wxSearchBar">
+                <input type="text" class="wx-search-input" id="wxSearchInput" placeholder="Escribe tu ciudad (ej. Bilbao)..." autocomplete="off">
+                <button type="button" class="wx-refresh-btn" id="wxSearchCloseBtn" aria-label="Cerrar búsqueda">&times;</button>
+            </div>
+        </div>
+        <div class="wx-search-results" id="wxSearchResults"></div>
+
+        <div class="wx-current">
+            <div class="wx-current-main">
+                <div class="wx-main-icon" id="wxMainIcon"></div>
+                <div class="wx-temp-wrap">
+                    <div class="wx-temp-now" id="wxTempNow">--°</div>
+                    <div class="wx-desc" id="wxDesc">Consultando satélite...</div>
+                </div>
+            </div>
+            <div class="wx-metrics">
+                <span>SENS <strong id="wxFeels">--°</strong></span>
+                <span>HUM <strong id="wxHumidity">--%</strong></span>
+                <span>VIENTO <strong id="wxWind">-- km/h</strong></span>
+            </div>
+        </div>
+
+        <div>
+            <div class="wx-section-label">Próximas horas</div>
+            <div class="wx-hourly-row" id="wxHourlyRow"></div>
+        </div>
+
+        <div>
+            <div class="wx-section-label">Próximos días</div>
+            <div class="wx-daily-list" id="wxDailyList"></div>
+        </div>
+    </div>
+
+    <!-- Selector de modo debajo de los relojes -->
+    <div class="bottom-switcher-bar">
+        <div class="mode-switcher" role="group" aria-label="Estilo de esfera">
+            <button type="button" class="mode-btn active" data-mode="studio">Estudio</button>
+            <button type="button" class="mode-btn" data-mode="nixie">Nixie</button>
+            <button type="button" class="mode-btn" data-mode="flip">Flip</button>
+            <button type="button" class="mode-btn" data-mode="calendar">Calendario</button>
+            <button type="button" class="mode-btn" data-mode="weather">Tiempo</button>
+        </div>
+    </div>
+
+    <!-- Panel de telemetría -->
+    <div class="info-panel">
+        <div class="info-grid">
+            <div class="info-label">Fuente</div>
+            <div id="sourceText" class="info-value">Local (Sistema)</div>
+            
+            <div class="info-label">IP Pública</div>
+            <div id="ipText" class="info-value">---</div>
+            
+            <div class="info-label">Estado</div>
+            <div id="statusWrapper" class="info-value status-pill text-gray">
+                <span class="status-dot"></span>
+                <span id="statusText">Esperando...</span>
+            </div>
+        </div>
+        
+        <div class="actions-row">
+            <button id="syncBtn" class="sync-btn">Sincronizar Reloj</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Lógica del Reloj Digital Sincronizado ---
+        var timeOffset = 0;
+        var isSyncing = false;
+        var leds = [];
+        var lastSecond = -1;
+        var currentMode = 'studio';
+        var lastDigits = ['', '', '', '', '', ''];
+        var clockContainer, dateEl, nxDateEl, nxDateGlowEl, sourceText, ipText, statusText, statusWrapper, syncBtn, timeEl;
+        var dialStudio, dialNixie, dialFlip, dialCalendar, dialWeather;
+        var nxEls = [], nxWeekMetaEl, nxFirstLightEl, nxSunriseEl, nxSunsetEl, nxLastLightEl;
+        var flEls = [], flBoxes = [], flWeekMetaEl, flFirstLightEl, flSunriseEl, flSunsetEl, flLastLightEl;
+        var flDateEls = [], flDateBoxes = [], lastDateParts = ['', '', '', ''];
+        var lastSolarDateKey = '';
+        var calViewYear = null, calViewMonth = null, calSelectedKey = '', lastTodayKey = '';
+        var calMonthTitleEl, calGridEl, calSelectedLabelEl, calMetaLabelEl, calHolidayBannerEl;
+        var holidayCache = {};
+        var weatherLoaded = false, isFetchingWeather = false;
+
+        function getWeatherMeta(code) {
+            var icons = {
+                sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+                partly: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M19.07 4.93l-1.41 1.41M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>',
+                cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>',
+                fog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7M17 21H9"/></svg>',
+                rain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6M8 14v6M12 16v6"/></svg>',
+                snow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M8 15h.01M8 19h.01M12 17h.01M12 21h.01M16 15h.01M16 19h.01"/></svg>',
+                storm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>'
+            };
+
+            if (code === 0) return { label: 'Despejado', svg: icons.sun };
+            if (code === 1 || code === 2) return { label: 'Poco nuboso', svg: icons.partly };
+            if (code === 3) return { label: 'Nublado', svg: icons.cloud };
+            if (code === 45 || code === 48) return { label: 'Niebla', svg: icons.fog };
+            if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return { label: 'Lluvia', svg: icons.rain };
+            if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { label: 'Nieve', svg: icons.snow };
+            if (code >= 95) return { label: 'Tormenta', svg: icons.storm };
+            return { label: 'Variable', svg: icons.partly };
+        }
+
+        function fetchConTimeout(url, timeoutMs) {
+            var ms = timeoutMs || 5000;
+            return new Promise(function(resolve, reject) {
+                var timer = setTimeout(function() {
+                    reject(new Error('Timeout'));
+                }, ms);
+                fetch(url)
+                    .then(function(res) {
+                        clearTimeout(timer);
+                        resolve(res);
+                    })
+                    .catch(function(err) {
+                        clearTimeout(timer);
+                        reject(err);
+                    });
+            });
+        }
+
+        function getDateKey(d) {
+            var y = d.getFullYear();
+            var m = d.getMonth() + 1;
+            var day = d.getDate();
+            return y + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+        }
+
+        function getISOWeekAndDayOfYear(date) {
+            var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            var dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            var week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+            var startOfYear = new Date(date.getFullYear(), 0, 1);
+            var currentDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            var dayOfYear = Math.round((currentDay - startOfYear) / 86400000) + 1;
+            return { week: week, dayOfYear: dayOfYear };
+        }
+
+        function getBarakaldoSolarTimes(date) {
+            // Coordenadas de Barakaldo: 43.2972° N, -2.9866° E
+            var lat = 43.2972;
+            var lon = -2.9866;
+            var rad = Math.PI / 180;
+            var deg = 180 / Math.PI;
+
+            var startOfYear = new Date(date.getFullYear(), 0, 1);
+            var currentDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            var N = Math.round((currentDay - startOfYear) / 86400000) + 1;
+
+            function calcEvent(zenith, isRise) {
+                var lngHour = lon / 15;
+                var t = N + ((isRise ? 6 : 18) - lngHour) / 24;
+                var M = (0.9856 * t) - 3.289;
+                var L = M + (1.916 * Math.sin(M * rad)) + (0.020 * Math.sin(2 * M * rad)) + 282.634;
+                L = ((L % 360) + 360) % 360;
+
+                var RA = deg * Math.atan(0.91764 * Math.tan(L * rad));
+                RA = ((RA % 360) + 360) % 360;
+                var Lquadrant = Math.floor(L / 90) * 90;
+                var RAquadrant = Math.floor(RA / 90) * 90;
+                RA = (RA + (Lquadrant - RAquadrant)) / 15;
+
+                var sinDec = 0.39782 * Math.sin(L * rad);
+                var cosDec = Math.cos(Math.asin(sinDec));
+                var cosH = (Math.cos(zenith * rad) - (sinDec * Math.sin(lat * rad))) / (cosDec * Math.cos(lat * rad));
+                if (cosH > 1 || cosH < -1) return '--:--';
+
+                var H = isRise ? (360 - deg * Math.acos(cosH)) : (deg * Math.acos(cosH));
+                H = H / 15;
+
+                var T = H + RA - (0.06571 * t) - 6.622;
+                var UT = ((T - lngHour) % 24 + 24) % 24;
+
+                var tzOffsetHours = -date.getTimezoneOffset() / 60;
+                var localT = ((UT + tzOffsetHours) % 24 + 24) % 24;
+
+                var totalMinutes = Math.round(localT * 60);
+                var hh = Math.floor(totalMinutes / 60) % 24;
+                var mm = totalMinutes % 60;
+                return (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+            }
+
+            return {
+                firstLight: calcEvent(96, true),    // Crepúsculo civil matutino (-6°)
+                sunrise: calcEvent(90.833, true),   // Salida del sol
+                sunset: calcEvent(90.833, false),   // Puesta del sol
+                lastLight: calcEvent(96, false)     // Crepúsculo civil vespertino (-6°)
+            };
+        }
+
+        function getEasterSunday(year) {
+            var a = year % 19;
+            var b = Math.floor(year / 100);
+            var c = year % 100;
+            var d = Math.floor(b / 4);
+            var e = b % 4;
+            var f = Math.floor((b + 8) / 25);
+            var g = Math.floor((b - f + 1) / 3);
+            var h = (19 * a + b - d - g + 15) % 30;
+            var i = Math.floor(c / 4);
+            var k = c % 4;
+            var l = (32 + 2 * e + 2 * i - h - k) % 7;
+            var m = Math.floor((a + 11 * h + 22 * l) / 451);
+            var month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+            var day = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(year, month, day);
+        }
+
+        function getHolidaysForYear(year) {
+            if (holidayCache[year]) return holidayCache[year];
+            var map = {};
+
+            function addHoliday(dateObj, name, scope) {
+                var key = getDateKey(dateObj);
+                if (map[key]) {
+                    map[key].name += ' / ' + name;
+                } else {
+                    map[key] = { name: name, scope: scope };
+                }
+            }
+
+            // Festivos Nacionales (España)
+            addHoliday(new Date(year, 0, 1), 'Año Nuevo', 'España');
+            addHoliday(new Date(year, 0, 6), 'Epifanía del Señor (Reyes)', 'España');
+            addHoliday(new Date(year, 4, 1), 'Fiesta del Trabajo', 'España');
+            addHoliday(new Date(year, 7, 15), 'Asunción de la Virgen', 'España');
+            addHoliday(new Date(year, 9, 12), 'Fiesta Nacional de España', 'España');
+            addHoliday(new Date(year, 10, 1), 'Todos los Santos', 'España');
+            addHoliday(new Date(year, 11, 6), 'Día de la Constitución', 'España');
+            addHoliday(new Date(year, 11, 8), 'Inmaculada Concepción', 'España');
+            addHoliday(new Date(year, 11, 25), 'Natividad del Señor', 'España');
+
+            // Semana Santa (móvil)
+            var easter = getEasterSunday(year);
+            var maundyThursday = new Date(year, easter.getMonth(), easter.getDate() - 3);
+            var goodFriday = new Date(year, easter.getMonth(), easter.getDate() - 2);
+            var easterMonday = new Date(year, easter.getMonth(), easter.getDate() + 1);
+            addHoliday(maundyThursday, 'Jueves Santo', 'Euskadi');
+            addHoliday(goodFriday, 'Viernes Santo', 'España');
+            addHoliday(easterMonday, 'Lunes de Pascua', 'Euskadi');
+
+            // Festivos Autonómicos (Euskadi)
+            addHoliday(new Date(year, 2, 19), 'San José', 'Euskadi');
+            addHoliday(new Date(year, 6, 25), 'Santiago Apóstol', 'Euskadi');
+
+            // Festivo Foral (Bizkaia)
+            addHoliday(new Date(year, 6, 31), 'San Ignacio de Loyola', 'Bizkaia');
+
+            // Festivo Local (Bilbao: Viernes de Semana Grande / Aste Nagusia)
+            // Aste Nagusia comienza el sábado siguiente al 15 de agosto; el viernes grande es 6 días después.
+            var aug15 = new Date(year, 7, 15);
+            var daysToSaturday = (6 - aug15.getDay() + 7) % 7;
+            if (daysToSaturday === 0) daysToSaturday = 7;
+            var asteNagusiaFriday = new Date(year, 7, 15 + daysToSaturday + 6);
+            addHoliday(asteNagusiaFriday, 'Viernes de Semana Grande', 'Bilbao');
+
+            holidayCache[year] = map;
+            return map;
+        }
+
+        function renderCalendar() {
+            if (!calGridEl) return;
+            var now = new Date(Date.now() + timeOffset);
+            var todayKey = getDateKey(now);
+
+            if (calViewYear === null || calViewMonth === null) {
+                calViewYear = now.getFullYear();
+                calViewMonth = now.getMonth();
+            }
+            if (!calSelectedKey) {
+                calSelectedKey = todayKey;
+            }
+
+            var mesesLargos = [
+                'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+                'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+            ];
+            calMonthTitleEl.textContent = mesesLargos[calViewMonth] + ' ' + calViewYear;
+
+            var firstDayOfMonth = new Date(calViewYear, calViewMonth, 1);
+            var startWeekday = (firstDayOfMonth.getDay() + 6) % 7; // Lunes = 0
+            var daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+            var prevMonthDays = new Date(calViewYear, calViewMonth, 0).getDate();
+
+            calGridEl.innerHTML = '';
+            var totalCells = 42;
+
+            for (var c = 0; c < totalCells; c++) {
+                var cellDate;
+                var isOtherMonth = false;
+
+                if (c < startWeekday) {
+                    var prevDay = prevMonthDays - startWeekday + 1 + c;
+                    cellDate = new Date(calViewYear, calViewMonth - 1, prevDay);
+                    isOtherMonth = true;
+                } else if (c >= startWeekday + daysInMonth) {
+                    var nextDay = c - (startWeekday + daysInMonth) + 1;
+                    cellDate = new Date(calViewYear, calViewMonth + 1, nextDay);
+                    isOtherMonth = true;
+                } else {
+                    var curDay = c - startWeekday + 1;
+                    cellDate = new Date(calViewYear, calViewMonth, curDay);
+                }
+
+                var key = getDateKey(cellDate);
+                var yHolidays = getHolidaysForYear(cellDate.getFullYear());
+                var holidayInfo = yHolidays[key];
+                var weekdayIdx = c % 7;
+
+                var cell = document.createElement('div');
+                cell.className = 'cal-day';
+                if (isOtherMonth) cell.classList.add('other-month');
+                if (weekdayIdx >= 5) cell.classList.add('weekend');
+                if (holidayInfo) {
+                    cell.classList.add('holiday');
+                    cell.title = holidayInfo.name + ' (' + holidayInfo.scope + ')';
+                }
+                if (key === todayKey) cell.classList.add('today');
+                if (key === calSelectedKey) cell.classList.add('selected');
+                cell.textContent = cellDate.getDate();
+
+                (function(targetKey, targetYear, targetMonth) {
+                    cell.addEventListener('click', function() {
+                        calSelectedKey = targetKey;
+                        calViewYear = targetYear;
+                        calViewMonth = targetMonth;
+                        renderCalendar();
+                    });
+                })(key, cellDate.getFullYear(), cellDate.getMonth());
+
+                calGridEl.appendChild(cell);
+            }
+
+            // Actualizar pie de fecha seleccionada y banner de festivos
+            var selParts = calSelectedKey.split('-');
+            var selDate = new Date(parseInt(selParts[0], 10), parseInt(selParts[1], 10) - 1, parseInt(selParts[2], 10));
+            var diasFull = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+            var mesesCortos = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+            var selDayStr = (selDate.getDate() < 10 ? '0' : '') + selDate.getDate();
+            calSelectedLabelEl.textContent = diasFull[selDate.getDay()] + ' ' + selDayStr + ' ' + mesesCortos[selDate.getMonth()] + ' ' + selDate.getFullYear();
+
+            var meta = getISOWeekAndDayOfYear(selDate);
+            calMetaLabelEl.textContent = 'SEM ' + (meta.week < 10 ? '0' : '') + meta.week + ' · DÍA ' + meta.dayOfYear;
+
+            var selHoliday = getHolidaysForYear(selDate.getFullYear())[calSelectedKey];
+            if (selHoliday) {
+                calHolidayBannerEl.classList.remove('empty');
+                calHolidayBannerEl.textContent = selHoliday.name + ' · ' + selHoliday.scope;
+            } else {
+                calHolidayBannerEl.classList.add('empty');
+                calHolidayBannerEl.textContent = '';
+            }
+        }
+
+        function reverseGeocodeCoords(lat, lon, fallbackLabel) {
+            var revUrl = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lon + '&accept-language=es';
+            return fetchConTimeout(revUrl, 4500)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var addr = (data && data.address) || {};
+                    var city = addr.city || addr.town || addr.village || addr.municipality || addr.county || fallbackLabel;
+                    return city || fallbackLabel;
+                })
+                .catch(function() {
+                    return fallbackLabel;
+                });
+        }
+
+        function loadWeatherByCoords(lat, lon, cityLabel, isGps) {
+            var cityEl = document.getElementById('wxCity');
+            var descEl = document.getElementById('wxDesc');
+            var dotEl = document.getElementById('wxLocDot');
+            var gpsBtn = document.getElementById('wxGpsBtn');
+
+            if (dotEl) {
+                if (isGps) dotEl.classList.add('gps');
+                else dotEl.classList.remove('gps');
+            }
+            if (gpsBtn) {
+                if (isGps) gpsBtn.classList.add('gps-active');
+                else gpsBtn.classList.remove('gps-active');
+            }
+
+            if (cityEl && cityLabel) cityEl.textContent = cityLabel;
+            if (descEl) descEl.textContent = 'Actualizando datos...';
+
+            var wxUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+                '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m' +
+                '&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min' +
+                '&timezone=auto&forecast_days=5';
+
+            return fetchConTimeout(wxUrl, 6000)
+                .then(function(r) { return r.json(); })
+                .then(function(wx) {
+                    if (!wx || !wx.current) throw new Error('Sin datos');
+                    var cur = wx.current;
+                    var meta = getWeatherMeta(cur.weather_code);
+
+                    document.getElementById('wxMainIcon').innerHTML = meta.svg;
+                    document.getElementById('wxTempNow').textContent = Math.round(cur.temperature_2m) + '°';
+                    document.getElementById('wxDesc').textContent = meta.label;
+                    document.getElementById('wxFeels').textContent = Math.round(cur.apparent_temperature) + '°';
+                    document.getElementById('wxHumidity').textContent = Math.round(cur.relative_humidity_2m) + '%';
+                    document.getElementById('wxWind').textContent = Math.round(cur.wind_speed_10m) + ' km/h';
+
+                    // Próximas horas (5 intervalos cada 2 horas)
+                    var hourlyRow = document.getElementById('wxHourlyRow');
+                    hourlyRow.innerHTML = '';
+                    var times = wx.hourly.time || [];
+                    var hTemps = wx.hourly.temperature_2m || [];
+                    var hCodes = wx.hourly.weather_code || [];
+                    var curTimeStr = cur.time ? cur.time.slice(0, 13) : '';
+                    var startIdx = 0;
+                    for (var i = 0; i < times.length; i++) {
+                        if (times[i].slice(0, 13) >= curTimeStr) {
+                            startIdx = i;
+                            break;
+                        }
+                    }
+
+                    for (var h = 0; h < 5; h++) {
+                        var idx = startIdx + (h * 2);
+                        if (idx >= times.length) break;
+                        var hh = times[idx].slice(11, 16);
+                        var hMeta = getWeatherMeta(hCodes[idx]);
+                        var card = document.createElement('div');
+                        card.className = 'wx-hour-card';
+                        card.innerHTML =
+                            '<span class="wx-hour-time">' + (h === 0 ? 'AHORA' : hh) + '</span>' +
+                            '<div class="wx-hour-icon">' + hMeta.svg + '</div>' +
+                            '<span class="wx-hour-temp">' + Math.round(hTemps[idx]) + '°</span>';
+                        hourlyRow.appendChild(card);
+                    }
+
+                    // Próximos días (4 días)
+                    var dailyList = document.getElementById('wxDailyList');
+                    dailyList.innerHTML = '';
+                    var dTimes = wx.daily.time || [];
+                    var dMax = wx.daily.temperature_2m_max || [];
+                    var dMin = wx.daily.temperature_2m_min || [];
+                    var dCodes = wx.daily.weather_code || [];
+                    var diasSemana = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+
+                    var weekMin = Math.min.apply(null, dMin.slice(0, 4));
+                    var weekMax = Math.max.apply(null, dMax.slice(0, 4));
+                    var span = Math.max(1, weekMax - weekMin);
+
+                    for (var d = 0; d < 4 && d < dTimes.length; d++) {
+                        var parts = dTimes[d].split('-');
+                        var dObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                        var dayLabel = d === 0 ? 'HOY' : diasSemana[dObj.getDay()];
+                        var dMeta = getWeatherMeta(dCodes[d]);
+                        var leftPct = ((dMin[d] - weekMin) / span) * 100;
+                        var widthPct = Math.max(12, ((dMax[d] - dMin[d]) / span) * 100);
+
+                        var row = document.createElement('div');
+                        row.className = 'wx-day-row';
+                        row.innerHTML =
+                            '<span class="wx-day-name">' + dayLabel + '</span>' +
+                            '<div class="wx-day-icon">' + dMeta.svg + '</div>' +
+                            '<div class="wx-bar-track"><div class="wx-bar-fill" style="left:' + leftPct + '%;width:' + widthPct + '%"></div></div>' +
+                            '<div class="wx-day-temps"><span class="wx-tmin">' + Math.round(dMin[d]) + '°</span><span class="wx-tmax">' + Math.round(dMax[d]) + '°</span></div>';
+                        dailyList.appendChild(row);
+                    }
+
+                    weatherLoaded = true;
+                });
+        }
+
+        function fetchWeather(forceRefresh) {
+            if (isFetchingWeather) return;
+            if (weatherLoaded && !forceRefresh) return;
+            isFetchingWeather = true;
+
+            var savedLoc = null;
+            try {
+                var raw = localStorage.getItem('reloj_wx_loc');
+                if (raw) savedLoc = JSON.parse(raw);
+            } catch (e) {}
+
+            var target = (savedLoc && typeof savedLoc.lat === 'number' && typeof savedLoc.lon === 'number')
+                ? savedLoc
+                : { lat: 43.2972, lon: -2.9866, name: 'Barakaldo', isGps: false };
+
+            loadWeatherByCoords(target.lat, target.lon, target.name, !!target.isGps)
+                .catch(function() {
+                    var descEl = document.getElementById('wxDesc');
+                    if (descEl) descEl.textContent = 'Sin conexión meteorológica';
+                })
+                .then(function() {
+                    isFetchingWeather = false;
+                });
+        }
+
+        function useDeviceGpsForWeather() {
+            if (!navigator.geolocation) {
+                var descEl = document.getElementById('wxDesc');
+                if (descEl) descEl.textContent = 'GPS no disponible en navegador';
+                return;
+            }
+            var descEl = document.getElementById('wxDesc');
+            if (descEl) descEl.textContent = 'Obteniendo ubicación GPS...';
+
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    var lat = pos.coords.latitude;
+                    var lon = pos.coords.longitude;
+                    reverseGeocodeCoords(lat, lon, 'Mi ubicación').then(function(cityName) {
+                        try {
+                            localStorage.setItem('reloj_wx_loc', JSON.stringify({ lat: lat, lon: lon, name: cityName, isGps: true }));
+                        } catch (e) {}
+                        loadWeatherByCoords(lat, lon, cityName, true);
+                    });
+                },
+                function() {
+                    if (descEl) descEl.textContent = 'Permiso de ubicación denegado';
+                },
+                { enableHighAccuracy: false, timeout: 7000, maximumAge: 300000 }
+            );
+        }
+
+        function searchCityWeather(query) {
+            var resultsEl = document.getElementById('wxSearchResults');
+            if (!resultsEl) return;
+            if (!query || query.trim().length < 2) {
+                resultsEl.classList.remove('open');
+                resultsEl.innerHTML = '';
+                return;
+            }
+            var url = 'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(query.trim()) + '&count=4&language=es&format=json';
+            fetchConTimeout(url, 4500)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    resultsEl.innerHTML = '';
+                    var list = (data && data.results) || [];
+                    if (!list.length) {
+                        resultsEl.classList.remove('open');
+                        return;
+                    }
+                    list.forEach(function(item) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'wx-result-item';
+                        var sub = [item.admin1, item.country].filter(Boolean).join(', ');
+                        btn.innerHTML = '<span>' + item.name + '</span><span class="wx-result-sub">' + sub + '</span>';
+                        btn.addEventListener('click', function() {
+                            try {
+                                localStorage.setItem('reloj_wx_loc', JSON.stringify({
+                                    lat: item.latitude,
+                                    lon: item.longitude,
+                                    name: item.name,
+                                    isGps: false
+                                }));
+                            } catch (e) {}
+                            document.getElementById('wxSearchBar').classList.remove('open');
+                            resultsEl.classList.remove('open');
+                            resultsEl.innerHTML = '';
+                            loadWeatherByCoords(item.latitude, item.longitude, item.name, false);
+                        });
+                        resultsEl.appendChild(btn);
+                    });
+                    resultsEl.classList.add('open');
+                })
+                .catch(function() {});
+        }
+
+        function setDialMode(mode) {
+            currentMode = mode;
+            if (dialStudio) dialStudio.style.display = mode === 'studio' ? 'flex' : 'none';
+            if (dialNixie) dialNixie.style.display = mode === 'nixie' ? 'flex' : 'none';
+            if (dialFlip) dialFlip.style.display = mode === 'flip' ? 'flex' : 'none';
+            if (dialCalendar) dialCalendar.style.display = mode === 'calendar' ? 'flex' : 'none';
+            if (dialWeather) dialWeather.style.display = mode === 'weather' ? 'flex' : 'none';
+
+            var btns = document.querySelectorAll('.mode-btn');
+            for (var i = 0; i < btns.length; i++) {
+                if (btns[i].getAttribute('data-mode') === mode) {
+                    btns[i].classList.add('active');
+                } else {
+                    btns[i].classList.remove('active');
+                }
+            }
+
+            if (mode === 'calendar') {
+                renderCalendar();
+            } else if (mode === 'weather') {
+                fetchWeather(false);
+            }
+        }
+
+        function updateClock() {
+            var now = new Date(Date.now() + timeOffset);
+            var h = now.getHours();
+            var m = now.getMinutes();
+            var s = now.getSeconds();
+
+            var hours = (h < 10 ? '0' : '') + h;
+            var minutes = (m < 10 ? '0' : '') + m;
+            var seconds = (s < 10 ? '0' : '') + s;
+
+            if (timeEl) {
+                timeEl.textContent = hours + ':' + minutes;
+            }
+
+            // Actualizar dígitos de Nixie y Flip (HH:MM:SS)
+            var digits = [hours[0], hours[1], minutes[0], minutes[1], seconds[0], seconds[1]];
+            for (var d = 0; d < 6; d++) {
+                if (nxEls[d]) nxEls[d].textContent = digits[d];
+                if (flEls[d]) {
+                    if (lastDigits[d] !== digits[d]) {
+                        flEls[d].textContent = digits[d];
+                        if (flBoxes[d]) {
+                            flBoxes[d].classList.remove('flipping');
+                            void flBoxes[d].offsetWidth;
+                            flBoxes[d].classList.add('flipping');
+                        }
+                    }
+                }
+            }
+            lastDigits = digits;
+
+            // Actualizar metadatos compartidos de Nixie y Flip (semana ISO, día del año, % año, zona horaria)
+            var isoMeta = getISOWeekAndDayOfYear(now);
+            var weekMetaStr = 'SEM ' + (isoMeta.week < 10 ? '0' : '') + isoMeta.week + ' · DÍA ' + isoMeta.dayOfYear;
+            if (nxWeekMetaEl) nxWeekMetaEl.textContent = weekMetaStr;
+            if (flWeekMetaEl) flWeekMetaEl.textContent = weekMetaStr;
+
+            var yearStart = new Date(now.getFullYear(), 0, 1);
+            var yearEnd = new Date(now.getFullYear() + 1, 0, 1);
+            // Actualizar metadatos compartidos de Nixie y Flip (semana ISO, día del año y horas solares de Barakaldo)
+            var isoMeta = getISOWeekAndDayOfYear(now);
+            var weekMetaStr = 'SEM ' + (isoMeta.week < 10 ? '0' : '') + isoMeta.week + ' · DÍA ' + isoMeta.dayOfYear;
+            if (nxWeekMetaEl) nxWeekMetaEl.textContent = weekMetaStr;
+            if (flWeekMetaEl) flWeekMetaEl.textContent = weekMetaStr;
+
+            var currentTodayKey = getDateKey(now);
+            if (lastSolarDateKey !== currentTodayKey) {
+                lastSolarDateKey = currentTodayKey;
+                var solar = getBarakaldoSolarTimes(now);
+                if (nxFirstLightEl) nxFirstLightEl.textContent = solar.firstLight;
+                if (nxSunriseEl) nxSunriseEl.textContent = solar.sunrise;
+                if (nxSunsetEl) nxSunsetEl.textContent = solar.sunset;
+                if (nxLastLightEl) nxLastLightEl.textContent = solar.lastLight;
+
+                if (flFirstLightEl) flFirstLightEl.textContent = solar.firstLight;
+                if (flSunriseEl) flSunriseEl.textContent = solar.sunrise;
+                if (flSunsetEl) flSunsetEl.textContent = solar.sunset;
+                if (flLastLightEl) flLastLightEl.textContent = solar.lastLight;
+            }
+
+            if (s !== lastSecond) {
+                lastSecond = s;
+
+                for (var i = 0; i < leds.length; i++) {
+                    if (i <= s) {
+                        leds[i].classList.add('active');
+                    } else {
+                        leds[i].classList.remove('active');
+                    }
+                }
+            }
+
+            // Actualizar fecha sincronizada
+            var dias = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+            var meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+            var dayWord = dias[now.getDay()];
+            var dayNumStr = (now.getDate() < 10 ? '0' : '') + now.getDate();
+            var monthWord = meses[now.getMonth()];
+            var yearStr = String(now.getFullYear());
+            var formattedDate = dayWord + ' ' + dayNumStr + ' ' + monthWord + ' ' + yearStr;
+
+            if (dateEl && dateEl.textContent !== formattedDate) {
+                dateEl.textContent = formattedDate;
+            }
+            if (nxDateEl && nxDateEl.textContent !== formattedDate) {
+                nxDateEl.textContent = formattedDate;
+                if (nxDateGlowEl) nxDateGlowEl.textContent = formattedDate;
+            }
+
+            var dateParts = [dayWord, dayNumStr, monthWord, yearStr];
+            for (var p = 0; p < 4; p++) {
+                if (flDateEls[p] && lastDateParts[p] !== dateParts[p]) {
+                    flDateEls[p].textContent = dateParts[p];
+                    if (flDateBoxes[p]) {
+                        flDateBoxes[p].classList.remove('flipping');
+                        void flDateBoxes[p].offsetWidth;
+                        flDateBoxes[p].classList.add('flipping');
+                    }
+                }
+            }
+            lastDateParts = dateParts;
+
+            // Si cambia el día a medianoche, refrescar el calendario
+            if (lastTodayKey && lastTodayKey !== currentTodayKey) {
+                calSelectedKey = currentTodayKey;
+                calViewYear = now.getFullYear();
+                calViewMonth = now.getMonth();
+                if (currentMode === 'calendar') renderCalendar();
+            }
+            lastTodayKey = currentTodayKey;
+        }
+
+        function setStatus(text, colorClass) {
+            if (!statusText || !statusWrapper) return;
+            statusText.textContent = text;
+            statusWrapper.className = 'info-value status-pill ' + colorClass;
+        }
+
+        function formatOffsetMs(offsetMs) {
+            var rounded = Math.round(offsetMs);
+            var sign = rounded >= 0 ? '+' : '';
+            return sign + rounded + ' ms';
+        }
+
+        function syncTime() {
+            if (isSyncing) return;
+            isSyncing = true;
+            if (syncBtn) syncBtn.disabled = true;
+            setStatus('Conectando TimeAPI...', 'text-yellow');
+
+            var localTz = 'Europe/Madrid';
+            try {
+                var detectedTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (detectedTz) localTz = detectedTz;
+            } catch (e) {}
+
+            // Obtener IP pública en paralelo sin bloquear la sincronización horaria
+            fetchConTimeout('https://api.ipify.org?format=json', 4000)
+                .then(function(r) { return r.json(); })
+                .then(function(ipData) {
+                    if (ipText && ipData && ipData.ip) ipText.textContent = ipData.ip;
+                })
+                .catch(function() {});
+
+            function tryTimeApiIo(url) {
+                var reqStart = Date.now();
+                return fetchConTimeout(url, 7000)
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        if (!data || typeof data.year !== 'number') {
+                            throw new Error('Respuesta inválida de TimeAPI');
+                        }
+                        var reqEnd = Date.now();
+                        var latency = (reqEnd - reqStart) / 2;
+                        var serverUtc = Date.UTC(
+                            data.year,
+                            data.month - 1,
+                            data.day,
+                            data.hour,
+                            data.minute,
+                            data.seconds,
+                            data.milliSeconds || 0
+                        ) + latency;
+
+                        timeOffset = serverUtc - reqEnd;
+                        if (sourceText) sourceText.textContent = 'TimeAPI.io (' + localTz + ')';
+                        setStatus('Sincronizado (' + formatOffsetMs(timeOffset) + ')', 'text-green');
+                        lastSecond = -1;
+                        updateClock();
+                    });
+            }
+
+            // 1. Prioridad principal: TimeAPI.io en UTC (evita ambigüedades de zona horaria)
+            tryTimeApiIo('https://timeapi.io/api/time/current/zone?timeZone=UTC')
+                .catch(function() {
+                    return tryTimeApiIo('https://www.timeapi.io/api/Time/current/zone?timeZone=UTC');
+                })
+                // 2. Respaldo: WorldTimeAPI
+                .catch(function() {
+                    var wtStart = Date.now();
+                    return fetchConTimeout('https://worldtimeapi.org/api/ip', 5000)
+                        .then(function(res) {
+                            if (!res.ok) throw new Error('Error WorldTimeAPI');
+                            return res.json();
+                        })
+                        .then(function(data) {
+                            var wtEnd = Date.now();
+                            var latency = (wtEnd - wtStart) / 2;
+                            var serverTime = new Date(data.datetime).getTime() + latency;
+                            if (isNaN(serverTime)) throw new Error('Fecha inválida');
+
+                            timeOffset = serverTime - wtEnd;
+                            if (ipText && data.client_ip) ipText.textContent = data.client_ip;
+                            if (sourceText) sourceText.textContent = 'WorldTimeAPI (' + (data.timezone || localTz) + ')';
+                            setStatus('Sincronizado (' + formatOffsetMs(timeOffset) + ')', 'text-green');
+                            lastSecond = -1;
+                            updateClock();
+                        });
+                })
+                // 3. Respaldo de alta disponibilidad: Cloudflare Trace (epoch exacto + IP)
+                .catch(function() {
+                    var cfStart = Date.now();
+                    return fetchConTimeout('https://www.cloudflare.com/cdn-cgi/trace', 4500)
+                        .then(function(res) {
+                            if (!res.ok) throw new Error('Error Cloudflare');
+                            return res.text();
+                        })
+                        .then(function(txt) {
+                            var cfEnd = Date.now();
+                            var latency = (cfEnd - cfStart) / 2;
+                            var tsMatch = txt.match(/ts=([0-9.]+)/);
+                            var ipMatch = txt.match(/ip=([^\s]+)/);
+                            if (!tsMatch) throw new Error('Sin timestamp');
+
+                            var serverTime = Math.round(parseFloat(tsMatch[1]) * 1000) + latency;
+                            timeOffset = serverTime - cfEnd;
+                            if (ipText && ipMatch) ipText.textContent = ipMatch[1];
+                            if (sourceText) sourceText.textContent = 'Red NTP Edge (' + localTz + ')';
+                            setStatus('Sincronizado (' + formatOffsetMs(timeOffset) + ')', 'text-green');
+                            lastSecond = -1;
+                            updateClock();
+                        });
+                })
+                .catch(function() {
+                    timeOffset = 0;
+                    if (sourceText) sourceText.textContent = 'Reloj Local (Dispositivo)';
+                    setStatus('Modo Local (0 ms)', 'text-yellow');
+                })
+                .then(function() {
+                    isSyncing = false;
+                    if (syncBtn) syncBtn.disabled = false;
+                });
+        }
+
+        function initApp() {
+            clockContainer = document.getElementById('clockContainer');
+            dateEl = document.getElementById('dateText');
+            nxDateEl = document.getElementById('nxDate');
+            nxDateGlowEl = document.getElementById('nxDateGlow');
+            sourceText = document.getElementById('sourceText');
+            ipText = document.getElementById('ipText');
+            statusText = document.getElementById('statusText');
+            statusWrapper = document.getElementById('statusWrapper');
+            syncBtn = document.getElementById('syncBtn');
+
+            dialStudio = document.getElementById('dialStudio');
+            dialNixie = document.getElementById('dialNixie');
+            dialFlip = document.getElementById('dialFlip');
+            dialCalendar = document.getElementById('dialCalendar');
+            dialWeather = document.getElementById('dialWeather');
+
+            nxWeekMetaEl = document.getElementById('nxWeekMeta');
+            nxFirstLightEl = document.getElementById('nxFirstLight');
+            nxSunriseEl = document.getElementById('nxSunrise');
+            nxSunsetEl = document.getElementById('nxSunset');
+            nxLastLightEl = document.getElementById('nxLastLight');
+
+            flWeekMetaEl = document.getElementById('flWeekMeta');
+            flFirstLightEl = document.getElementById('flFirstLight');
+            flSunriseEl = document.getElementById('flSunrise');
+            flSunsetEl = document.getElementById('flSunset');
+            flLastLightEl = document.getElementById('flLastLight');
+
+            for (var i = 0; i < 6; i++) {
+                nxEls.push(document.getElementById('nx' + i));
+                flEls.push(document.getElementById('fl' + i));
+                flBoxes.push(document.getElementById('flBox' + i));
+            }
+
+            flDateEls = [
+                document.getElementById('flDay'),
+                document.getElementById('flDateNum'),
+                document.getElementById('flMonth'),
+                document.getElementById('flYear')
+            ];
+            flDateBoxes = [
+                document.getElementById('flDayBox'),
+                document.getElementById('flDateNumBox'),
+                document.getElementById('flMonthBox'),
+                document.getElementById('flYearBox')
+            ];
+
+            // Referencias y eventos del Calendario
+            calMonthTitleEl = document.getElementById('calMonthTitle');
+            calGridEl = document.getElementById('calGrid');
+            calSelectedLabelEl = document.getElementById('calSelectedLabel');
+            calMetaLabelEl = document.getElementById('calMetaLabel');
+            calHolidayBannerEl = document.getElementById('calHolidayBanner');
+
+            document.getElementById('calPrevBtn').addEventListener('click', function() {
+                calViewMonth--;
+                if (calViewMonth < 0) {
+                    calViewMonth = 11;
+                    calViewYear--;
+                }
+                renderCalendar();
+            });
+
+            document.getElementById('calNextBtn').addEventListener('click', function() {
+                calViewMonth++;
+                if (calViewMonth > 11) {
+                    calViewMonth = 0;
+                    calViewYear++;
+                }
+                renderCalendar();
+            });
+
+            document.getElementById('calTodayBtn').addEventListener('click', function() {
+                var now = new Date(Date.now() + timeOffset);
+                calViewYear = now.getFullYear();
+                calViewMonth = now.getMonth();
+                calSelectedKey = getDateKey(now);
+                renderCalendar();
+            });
+
+            // Eventos de Tiempo Meteorológico
+            var wxRefreshBtn = document.getElementById('wxRefreshBtn');
+            if (wxRefreshBtn) {
+                wxRefreshBtn.addEventListener('click', function() {
+                    weatherLoaded = false;
+                    fetchWeather(true);
+                });
+            }
+
+            var wxGpsBtn = document.getElementById('wxGpsBtn');
+            if (wxGpsBtn) {
+                wxGpsBtn.addEventListener('click', function() {
+                    useDeviceGpsForWeather();
+                });
+            }
+
+            var wxSearchBar = document.getElementById('wxSearchBar');
+            var wxSearchInput = document.getElementById('wxSearchInput');
+            var wxSearchResults = document.getElementById('wxSearchResults');
+
+            function openWxSearch() {
+                if (wxSearchBar) wxSearchBar.classList.add('open');
+                if (wxSearchInput) {
+                    wxSearchInput.value = '';
+                    wxSearchInput.focus();
+                }
+            }
+
+            var wxSearchToggleBtn = document.getElementById('wxSearchToggleBtn');
+            var wxCityEl = document.getElementById('wxCity');
+            if (wxSearchToggleBtn) wxSearchToggleBtn.addEventListener('click', openWxSearch);
+            if (wxCityEl) wxCityEl.addEventListener('click', openWxSearch);
+
+            var wxSearchCloseBtn = document.getElementById('wxSearchCloseBtn');
+            if (wxSearchCloseBtn) {
+                wxSearchCloseBtn.addEventListener('click', function() {
+                    if (wxSearchBar) wxSearchBar.classList.remove('open');
+                    if (wxSearchResults) {
+                        wxSearchResults.classList.remove('open');
+                        wxSearchResults.innerHTML = '';
+                    }
+                });
+            }
+
+            var searchDebounce = null;
+            if (wxSearchInput) {
+                wxSearchInput.addEventListener('input', function() {
+                    clearTimeout(searchDebounce);
+                    var val = wxSearchInput.value;
+                    searchDebounce = setTimeout(function() {
+                        searchCityWeather(val);
+                    }, 300);
+                });
+            }
+
+            // Selector de modo
+            var modeBtns = document.querySelectorAll('.mode-btn');
+            for (var b = 0; b < modeBtns.length; b++) {
+                modeBtns[b].addEventListener('click', function() {
+                    setDialMode(this.getAttribute('data-mode'));
+                });
+            }
+
+            // Construir pantalla interna del reloj Estudio
+            var cluster = document.createElement('div');
+            cluster.className = 'display-cluster';
+
+            var timeWrap = document.createElement('div');
+            timeWrap.className = 'time-wrapper';
+
+            var ghost = document.createElement('div');
+            ghost.className = 'digital-ghost';
+            ghost.textContent = '88:88';
+
+            timeEl = document.createElement('div');
+            timeEl.id = 'timeText';
+            timeEl.className = 'digital-time';
+            timeEl.textContent = '--:--';
+
+            timeWrap.appendChild(ghost);
+            timeWrap.appendChild(timeEl);
+            cluster.appendChild(timeWrap);
+            clockContainer.appendChild(cluster);
+
+            // Generar los 60 LEDs perimetrales
+            var isSmall = window.innerWidth <= 420;
+            var center = isSmall ? 113 : 122;
+            var radius = isSmall ? 100 : 108;
+
+            for (var s = 0; s < 60; s++) {
+                var led = document.createElement('div');
+                led.className = 'led';
+
+                if (s % 15 === 0) {
+                    led.classList.add('led-marker-15');
+                } else if (s % 5 === 0) {
+                    led.classList.add('led-marker-5');
+                }
+
+                var angleDeg = (s * 6) - 90;
+                var angleRad = angleDeg * (Math.PI / 180);
+
+                var x = center + radius * Math.cos(angleRad);
+                var y = center + radius * Math.sin(angleRad);
+
+                led.style.left = x + 'px';
+                led.style.top = y + 'px';
+
+                clockContainer.appendChild(led);
+                leds.push(led);
+            }
+
+            if (syncBtn) {
+                syncBtn.addEventListener('click', syncTime);
+            }
+
+            updateClock();
+            setInterval(updateClock, 250);
+            syncTime();
+            setInterval(syncTime, 3600000);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>
